@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..");
-const SKIN_VERSION = "1.1.1";
+const SKIN_VERSION = "1.1.2";
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 const MAX_ART_BYTES = 16 * 1024 * 1024;
 
@@ -206,11 +206,15 @@ async function loadTheme(themeDir) {
   const defaultAssetsRoot = path.join(root, "assets");
   let assetsRoot = defaultAssetsRoot;
   if (themeDir) {
+    const requestedConfig = path.join(themeDir, "theme.json");
     try {
-      await fs.access(path.join(themeDir, "theme.json"));
+      await fs.access(requestedConfig);
       assetsRoot = themeDir;
     } catch (error) {
-      if (error.code !== "ENOENT") throw error;
+      if (error.code === "ENOENT") {
+        throw new Error(`Requested theme config does not exist: ${requestedConfig}`);
+      }
+      throw error;
     }
   }
 

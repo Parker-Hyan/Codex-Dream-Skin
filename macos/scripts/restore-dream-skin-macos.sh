@@ -34,7 +34,8 @@ DEBUG_READY="false"
 verified_cdp_endpoint "$PORT" && DEBUG_READY="true"
 
 if [ "$DEBUG_READY" = "true" ]; then
-  "$NODE" "$INJECTOR" --remove --port "$PORT" --theme-dir "$THEME_DIR" --timeout-ms 8000 >/dev/null \
+  refresh_injector_theme_args
+  "$NODE" "$INJECTOR" --remove --port "$PORT" ${INJECTOR_THEME_ARGS[@]+"${INJECTOR_THEME_ARGS[@]}"} --timeout-ms 8000 >/dev/null \
     || fail "The live skin could not be removed and verified; restore stopped safely."
 elif [ "$CODEX_RUNNING" = "true" ] && [ "$RESTART_CODEX" = "false" ]; then
   fail "Codex is still running but its saved CDP endpoint cannot be verified. Pass --restart-codex for a full restore."
