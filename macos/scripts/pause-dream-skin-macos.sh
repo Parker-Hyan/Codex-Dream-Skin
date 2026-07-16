@@ -28,7 +28,8 @@ REMOVED="false"
 # Drop any launchd job that would relaunch Codex with CDP after quit / quitting the menu bar.
 release_codex_launchd_job || true
 if [ -f "$STATE_PATH" ]; then
-  stop_recorded_injector || true
+  stop_recorded_injector \
+    || fail "Recorded injector identity could not be verified; no process was stopped."
 fi
 
 DEBUG_READY="false"
@@ -37,7 +38,8 @@ if verified_cdp_endpoint "$PORT" 2>/dev/null; then
 fi
 
 if [ "$DEBUG_READY" = "true" ]; then
-  "$NODE" "$INJECTOR" --remove --port "$PORT" --theme-dir "$THEME_DIR" --timeout-ms 8000 >/dev/null \
+  refresh_injector_theme_args
+  "$NODE" "$INJECTOR" --remove --port "$PORT" ${INJECTOR_THEME_ARGS[@]+"${INJECTOR_THEME_ARGS[@]}"} --timeout-ms 8000 >/dev/null \
     || fail "Could not remove the live skin from Codex."
   REMOVED="true"
 fi

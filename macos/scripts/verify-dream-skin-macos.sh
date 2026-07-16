@@ -23,7 +23,8 @@ if [ "$PORT_EXPLICIT" = "false" ] && [ -f "$STATE_PATH" ]; then
 fi
 verified_cdp_endpoint "$PORT" || fail "Port $PORT is not a verified Codex loopback CDP endpoint."
 
-ARGS=("$INJECTOR" --verify --port "$PORT" --theme-dir "$THEME_DIR" --timeout-ms 30000)
+refresh_injector_theme_args
+ARGS=("$INJECTOR" --verify --port "$PORT" ${INJECTOR_THEME_ARGS[@]+"${INJECTOR_THEME_ARGS[@]}"} --timeout-ms 30000)
 [ -n "$SCREENSHOT" ] && ARGS+=(--screenshot "$SCREENSHOT")
 [ "$RELOAD" = "true" ] && ARGS+=(--reload)
 exec "$NODE" "${ARGS[@]}"

@@ -40,6 +40,8 @@ PAYLOAD_JSON="$("$NODE" "$ROOT/scripts/injector.mjs" --check-payload --theme-dir
 "$NODE" "$ROOT/scripts/write-theme.mjs" reset-demo --output-dir "$TMP/theme" >/dev/null
 [ ! -e "$TMP/theme" ]
 
+NODE="$NODE" "$ROOT/tests/security-regressions.sh"
+
 CONFIG="$TMP/config.toml"
 BACKUP="$TMP/theme-backup.json"
 /usr/bin/printf '%s\n' \
@@ -51,11 +53,20 @@ BACKUP="$TMP/theme-backup.json"
   'keepMe = true' > "$CONFIG"
 /bin/cp "$CONFIG" "$TMP/original.toml"
 "$NODE" "$ROOT/scripts/theme-config.mjs" install "$CONFIG" "$BACKUP" >/dev/null
-/usr/bin/grep -q 'appearanceTheme = "dark"' "$CONFIG"
+/usr/bin/cmp -s "$CONFIG" "$TMP/original.toml"
 "$NODE" "$ROOT/scripts/theme-config.mjs" restore "$CONFIG" "$BACKUP" >/dev/null
 /usr/bin/cmp -s "$CONFIG" "$TMP/original.toml"
 
-/usr/bin/env -u HOME /bin/bash -c '. "$1/scripts/common-macos.sh"; [ -n "$HOME" ] && [ "$SKIN_VERSION" = "1.1.1" ]' _ "$ROOT"
+CONFIG_NO_DESKTOP="$TMP/config-no-desktop.toml"
+BACKUP_NO_DESKTOP="$TMP/theme-backup-no-desktop.json"
+/usr/bin/printf '%s\n' 'model = "gpt-5"' 'note = "中文设置保留"' > "$CONFIG_NO_DESKTOP"
+/bin/cp "$CONFIG_NO_DESKTOP" "$TMP/original-no-desktop.toml"
+"$NODE" "$ROOT/scripts/theme-config.mjs" install "$CONFIG_NO_DESKTOP" "$BACKUP_NO_DESKTOP" >/dev/null
+/usr/bin/cmp -s "$CONFIG_NO_DESKTOP" "$TMP/original-no-desktop.toml"
+"$NODE" "$ROOT/scripts/theme-config.mjs" restore "$CONFIG_NO_DESKTOP" "$BACKUP_NO_DESKTOP" >/dev/null
+/usr/bin/cmp -s "$CONFIG_NO_DESKTOP" "$TMP/original-no-desktop.toml"
+
+/usr/bin/env -u HOME /bin/bash -c '. "$1/scripts/common-macos.sh"; [ -n "$HOME" ] && [ "$SKIN_VERSION" = "1.1.2" ]' _ "$ROOT"
 "$ROOT/scripts/doctor-macos.sh" >/dev/null
 
-printf 'PASS: syntax, payload, custom-theme, config round-trip, HOME recovery, signature, and doctor checks.\n'
+printf 'PASS: syntax, payload, custom-theme, security regressions, config round-trip, HOME recovery, signature, and doctor checks.\n'

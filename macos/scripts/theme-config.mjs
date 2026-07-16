@@ -48,10 +48,6 @@ try {
 
 const originalStat = await fs.stat(configPath);
 let section = desktopSection(content);
-if (!section) {
-  content = `${content.trimEnd()}\n\n[desktop]\n`;
-  section = desktopSection(content);
-}
 
 if (mode === "install") {
   try {
@@ -59,7 +55,8 @@ if (mode === "install") {
   } catch {
     const values = {};
     for (const key of settings.keys()) {
-      const match = new RegExp(`^${key.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}\\s*=.*$`, "m").exec(section.body);
+      const match = new RegExp(`^${key.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}\\s*=.*$`, "m")
+        .exec(section?.body ?? "");
       values[key] = match ? match[0] : null;
     }
     const backup = {
@@ -67,6 +64,7 @@ if (mode === "install") {
       platform: "darwin",
       createdAt: new Date().toISOString(),
       configPath,
+      desktopSectionPresent: Boolean(section),
       values,
     };
     await fs.mkdir(path.dirname(backupPath), { recursive: true, mode: 0o700 });
@@ -74,7 +72,7 @@ if (mode === "install") {
   }
 
   // Only apply non-null settings. null means "backup only / leave user's appearance alone".
-  let body = section.body;
+  let body = section?.body ?? "";
   let changed = false;
   for (const [key, line] of settings) {
     if (line === null) continue;
@@ -82,6 +80,11 @@ if (mode === "install") {
     changed = true;
   }
   if (changed) {
+    if (!section) {
+      const separator = content.endsWith("\n") ? "\n" : "\n\n";
+      content = `${content}${separator}[desktop]\n`;
+      section = desktopSection(content);
+    }
     const updated = content.slice(0, section.bodyStart) + body + content.slice(section.bodyEnd);
     await atomicWrite(configPath, updated, originalStat.mode & 0o777);
   }
@@ -96,6 +99,17 @@ if (mode === "install") {
   }
   if (backup.schemaVersion !== 1 || backup.configPath !== configPath || !backup.values) {
     throw new Error("Theme backup identity or schema does not match this config; nothing was restored.");
+  }
+  const hasSavedSettings = [...settings.keys()].some((key) => typeof backup.values[key] === "string");
+  if (!section && !hasSavedSettings) {
+    await fs.unlink(backupPath);
+    console.log("Restored the saved base-theme keys.");
+    process.exit(0);
+  }
+  if (!section) {
+    const separator = content.endsWith("\n") ? "\n" : "\n\n";
+    content = `${content}${separator}[desktop]\n`;
+    section = desktopSection(content);
   }
   let body = section.body;
   for (const key of settings.keys()) body = replaceSetting(body, key, backup.values[key] ?? null);

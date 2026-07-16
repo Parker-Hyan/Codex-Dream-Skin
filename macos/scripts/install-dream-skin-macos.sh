@@ -52,7 +52,8 @@ discover_codex_app
 require_macos_runtime
 ensure_state_root
 [ -f "$CONFIG_PATH" ] || fail "Codex config not found: $CONFIG_PATH. Launch Codex once, close it, and rerun the installer."
-"$NODE" "$INJECTOR" --check-payload --theme-dir "$THEME_DIR" >/dev/null
+refresh_injector_theme_args
+"$NODE" "$INJECTOR" --check-payload ${INJECTOR_THEME_ARGS[@]+"${INJECTOR_THEME_ARGS[@]}"} >/dev/null
 "$NODE" "$SCRIPT_DIR/theme-config.mjs" install "$CONFIG_PATH" "$THEME_BACKUP_PATH"
 
 shell_quote() {
